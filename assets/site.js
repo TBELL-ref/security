@@ -170,7 +170,6 @@
     ];
     var DAY = 86400000;
     var schedRanges = [];
-    var activePhase = 0;
 
     function fmt(d) {
       return d.getFullYear() + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + String(d.getDate()).padStart(2, "0");
@@ -258,24 +257,6 @@
       });
     }
 
-    function setActivePhase(index) {
-      activePhase = index;
-      var rows = document.querySelectorAll(".plan-gantt-row");
-      rows.forEach(function (row, i) {
-        row.classList.toggle("is-active", i === index);
-      });
-      var detail = $("plan-detail");
-      var range = schedRanges[index];
-      if (!detail || !range) return;
-      detail.innerHTML =
-        "<div class=\"d-k\">선택한 단계</div>" +
-        "<div class=\"d-v\"><b>" + range.name + "</b> · " + fmt(range.start) + " ~ " + fmt(range.end) +
-        " · 약 " + range.weeks + "주" +
-        (range.off ? "<br>" + range.off : "") +
-        (range.note && range.off.indexOf(range.note) === -1 ? "<br>" + range.note : "") +
-        "</div>";
-    }
-
     function renderGantt() {
       var host = $("sched-cal");
       if (!host) return;
@@ -312,12 +293,9 @@
       head.appendChild(months);
       gantt.appendChild(head);
 
-      schedRanges.forEach(function (range, index) {
+      schedRanges.forEach(function (range) {
         var row = document.createElement("div");
         row.className = "plan-gantt-row";
-        row.tabIndex = 0;
-        row.setAttribute("role", "button");
-        row.setAttribute("aria-pressed", index === activePhase ? "true" : "false");
         var label = document.createElement("div");
         label.className = "plan-label";
         label.innerHTML = "<strong>" + range.name + "</strong><span>" + fmt(range.start) + " ~ " + fmt(range.end) + "</span>";
@@ -329,18 +307,10 @@
         var width = ((range.end - range.start + DAY) / span) * 100;
         bar.style.left = Math.max(0, left) + "%";
         bar.style.width = Math.max(0.8, width) + "%";
-        bar.title = range.name + " · " + fmt(range.start) + " ~ " + fmt(range.end);
+        bar.title = range.name + " · " + fmt(range.start) + " ~ " + fmt(range.end) + (range.off ? " · " + range.off : "");
         track.appendChild(bar);
         row.appendChild(label);
         row.appendChild(track);
-        row.addEventListener("click", function () { setActivePhase(index); });
-        row.addEventListener("mouseenter", function () { setActivePhase(index); });
-        row.addEventListener("keydown", function (e) {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setActivePhase(index);
-          }
-        });
         gantt.appendChild(row);
       });
 
@@ -353,13 +323,6 @@
         "<span><i class=\"lg-ops\"></i>고객 운영 기간</span>" +
         "<span><i class=\"lg-audit\"></i>인증기관 일정</span>";
       host.appendChild(legend);
-
-      var detail = document.createElement("div");
-      detail.className = "plan-detail";
-      detail.id = "plan-detail";
-      host.appendChild(detail);
-      if (activePhase >= schedRanges.length) activePhase = 0;
-      setActivePhase(activePhase);
     }
 
     function renderStatus(target, start, today, daysLeft) {
@@ -369,15 +332,15 @@
       if (target <= today) {
         verdict.className = "plan-status is-warn";
         verdict.innerHTML =
-          "<div class=\"status-line\"><span class=\"status-badge\">목표일 경과</span>" +
-          "<span class=\"status-msg\">목표 심사일이 오늘 이전입니다. 날짜를 다시 선택해 주세요.</span></div>";
+          "<p class=\"status-badge\">목표일 경과</p>" +
+          "<p class=\"status-msg\">목표 심사일이 오늘 이전입니다. 날짜를 다시 선택해 주세요.</p>";
         return;
       }
       if (daysLeft >= 0) {
         verdict.className = "plan-status is-ok";
         verdict.innerHTML =
-          "<div class=\"status-line\"><span class=\"status-badge\">일정 가능</span>" +
-          "<span class=\"status-msg\">늦어도 <b>" + fmt(start) + "</b>까지 착수하면 권장 일정을 유지할 수 있습니다.</span></div>";
+          "<p class=\"status-badge\">일정 가능 · D-" + daysLeft + "</p>" +
+          "<p class=\"status-msg\">권장 착수일 <b>" + fmt(start) + "</b>까지 착수하면 권장 일정을 유지할 수 있습니다.</p>";
         return;
       }
       var shortWeeks = Math.ceil(-daysLeft / 7);
@@ -389,9 +352,9 @@
         ? " 보유 인증 증적을 다시 쓰면 앞 준비 단계를 줄일 수 있습니다."
         : "";
       verdict.innerHTML =
-        "<div class=\"status-line\"><span class=\"status-badge\">부족 약 " + shortWeeks + "주</span>" +
-        "<span class=\"status-msg\">권장 착수일 <b>" + fmt(start) + "</b> 기준으로 일정이 부족합니다.</span></div>" +
-        "<p class=\"status-adjust\">우선 조정 구간: <b style=\"color:var(--ink);font-weight:500\">" + adjustFocus + "</b>. 신청 전 관리체계 운영 2개월은 줄이기 어렵습니다.</p>" +
+        "<p class=\"status-badge\">부족 약 " + shortWeeks + "주</p>" +
+        "<p class=\"status-msg\">권장 착수일 <b>" + fmt(start) + "</b> 기준으로 일정이 부족합니다.</p>" +
+        "<p class=\"status-adjust\">우선 조정 구간: <b>" + adjustFocus + "</b>. 신청 전 관리체계 운영 2개월은 줄이기 어렵습니다.</p>" +
         "<details><summary>가능한 일정 조정 방안</summary>" +
         "<p>범위를 좁히거나 분석·대책 단계를 병행하는 단축 일정이 필요합니다." + reuse +
         " 목표 심사일을 뒤로 미루면 권장 일정으로 다시 맞출 수 있습니다.</p></details>";
