@@ -167,9 +167,81 @@
       { w: 10, name: "인증서 발급 예상", note: "보완조치·인증위원회 심의 후" }
     ];
     var DAY = 86400000;
+    var calView = null;
 
     function fmt(d) {
       return d.getFullYear() + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + String(d.getDate()).padStart(2, "0");
+    }
+
+    function iso(d) {
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+
+    function parseIso(value) {
+      if (!value) return null;
+      var parts = value.split("-");
+      return new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    }
+
+    function sameDay(a, b) {
+      return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    }
+
+    function renderCalendar(target) {
+      var grid = $("cal-grid");
+      var label = $("cal-label");
+      var selectedEl = $("cal-selected");
+      if (!grid || !label) return;
+      if (!calView) {
+        var seed = target || parseIso($("p-target").value) || new Date();
+        calView = { y: seed.getFullYear(), m: seed.getMonth() };
+      }
+      label.textContent = calView.y + "." + String(calView.m + 1).padStart(2, "0");
+      var now = new Date();
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var first = new Date(calView.y, calView.m, 1);
+      var startPad = first.getDay();
+      var startCell = new Date(calView.y, calView.m, 1 - startPad);
+      var marks = {};
+      if (target) {
+        var start = new Date(target.getTime() - 30 * 7 * DAY);
+        var apply = new Date(target.getTime() - 9 * 7 * DAY);
+        marks[iso(start)] = (marks[iso(start)] || "") + " mark-start";
+        marks[iso(apply)] = (marks[iso(apply)] || "") + " mark-apply";
+        marks[iso(target)] = (marks[iso(target)] || "") + " mark-audit";
+      }
+      grid.textContent = "";
+      for (var i = 0; i < 42; i++) {
+        var d = new Date(startCell.getFullYear(), startCell.getMonth(), startCell.getDate() + i);
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cal-day";
+        btn.textContent = String(d.getDate());
+        btn.setAttribute("role", "gridcell");
+        btn.setAttribute("aria-label", fmt(d));
+        if (d.getMonth() !== calView.m) btn.classList.add("out");
+        if (sameDay(d, today)) btn.classList.add("today");
+        if (target && sameDay(d, target)) {
+          btn.classList.add("selected");
+          btn.setAttribute("aria-selected", "true");
+        }
+        var key = iso(d);
+        if (marks[key]) btn.className += marks[key];
+        if (d < today) btn.disabled = true;
+        btn.addEventListener("click", function (picked) {
+          return function () {
+            $("p-target").value = iso(picked);
+            calView = { y: picked.getFullYear(), m: picked.getMonth() };
+            plan();
+          };
+        }(d));
+        grid.appendChild(btn);
+      }
+      if (selectedEl) {
+        selectedEl.innerHTML = target
+          ? "선택한 심사일 <b>" + fmt(target) + "</b>"
+          : "캘린더에서 목표 심사일을 선택하세요.";
+      }
     }
 
     function plan() {
@@ -177,14 +249,14 @@
       var steps = $("p-steps");
       var verdict = $("p-verdict");
       steps.textContent = "";
-      if (!value) {
+      var target = parseIso(value);
+      if (!value || !target) {
         verdict.className = "p-verdict";
         verdict.textContent = "목표 심사 시작일을 선택하세요.";
         lastPlan = null;
+        renderCalendar(null);
         return;
       }
-      var parts = value.split("-");
-      var target = new Date(+parts[0], +parts[1] - 1, +parts[2]);
       var now = new Date();
       var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       PHASES.forEach(function (phase) {
@@ -220,12 +292,32 @@
         verdict.className = "p-verdict late";
         verdict.innerHTML = "권장 일정보다 <b>약 " + shortWeeks + "주</b>가 부족합니다. 신청 전 관리체계 운영 2개월은 줄일 수 없으므로, 범위를 좁히거나 분석·대책 단계를 병행하는 단축 일정이 필요합니다." + (on("h-iso") || on("h-isms") ? " 보유 인증의 증적을 다시 쓰면 앞 단계를 줄일 수 있습니다." : "");
       }
+      if (!calView) calView = { y: target.getFullYear(), m: target.getMonth() };
+      renderCalendar(target);
     }
 
     navi.addEventListener("change", function () { diagnose(); plan(); });
     navi.addEventListener("submit", function (e) { e.preventDefault(); });
     $("p-target").addEventListener("change", plan);
     $("p-target").addEventListener("input", plan);
+    var calPrev = $("cal-prev");
+    var calNext = $("cal-next");
+    if (calPrev) {
+      calPrev.addEventListener("click", function () {
+        if (!calView) return;
+        calView.m -= 1;
+        if (calView.m < 0) { calView.m = 11; calView.y -= 1; }
+        renderCalendar(parseIso($("p-target").value));
+      });
+    }
+    if (calNext) {
+      calNext.addEventListener("click", function () {
+        if (!calView) return;
+        calView.m += 1;
+        if (calView.m > 11) { calView.m = 0; calView.y += 1; }
+        renderCalendar(parseIso($("p-target").value));
+      });
+    }
     diagnose();
     plan();
 
