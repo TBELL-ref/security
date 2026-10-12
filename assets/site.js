@@ -167,10 +167,7 @@
       { w: 10, name: "인증서 발급 예상", note: "보완조치·인증위원회 심의 후" }
     ];
     var DAY = 86400000;
-    var WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-    var schedView = null;
     var schedRanges = [];
-    var schedBounds = null;
 
     function fmt(d) {
       return d.getFullYear() + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + String(d.getDate()).padStart(2, "0");
@@ -180,10 +177,6 @@
       if (!value) return null;
       var parts = value.split("-");
       return new Date(+parts[0], +parts[1] - 1, +parts[2]);
-    }
-
-    function sameDay(a, b) {
-      return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
     }
 
     function addDays(d, n) {
@@ -205,9 +198,11 @@
           ? addDays(starts[i + 1].start, -1)
           : addDays(item.start, 13);
         if (end < item.start) end = item.start;
+        var days = Math.round((end - item.start) / DAY) + 1;
         return {
           start: item.start,
           end: end,
+          days: days,
           name: item.name,
           note: item.note,
           key: item.key,
@@ -218,111 +213,72 @@
       });
     }
 
-    function renderScheduleCalendar(today) {
+    function renderScheduleCalendar() {
       var host = $("sched-cal");
       if (!host) return;
       host.textContent = "";
-      if (!schedRanges.length || !schedView) return;
-
-      var y = schedView.y;
-      var m = schedView.m;
-      var minM = new Date(schedBounds.min.getFullYear(), schedBounds.min.getMonth(), 1);
-      var maxM = new Date(schedBounds.max.getFullYear(), schedBounds.max.getMonth(), 1);
-      var thisM = new Date(y, m, 1);
-
-      var toolbar = document.createElement("div");
-      toolbar.className = "sched-toolbar";
-      var prev = document.createElement("button");
-      prev.type = "button";
-      prev.className = "sched-nav";
-      prev.id = "sched-prev";
-      prev.setAttribute("aria-label", "이전 달");
-      prev.textContent = "‹";
-      prev.disabled = thisM <= minM;
-      var label = document.createElement("h3");
-      label.id = "sched-label";
-      label.textContent = y + "." + String(m + 1).padStart(2, "0");
-      var next = document.createElement("button");
-      next.type = "button";
-      next.className = "sched-nav";
-      next.id = "sched-next";
-      next.setAttribute("aria-label", "다음 달");
-      next.textContent = "›";
-      next.disabled = thisM >= maxM;
-      toolbar.appendChild(prev);
-      toolbar.appendChild(label);
-      toolbar.appendChild(next);
-      host.appendChild(toolbar);
+      if (!schedRanges.length) return;
 
       var hint = document.createElement("p");
       hint.className = "sched-hint";
-      hint.textContent = "각 막대는 해당 업무 시작일부터 다음 업무 전날까지입니다.";
+      hint.textContent = "가로 타임라인 · 각 구간은 업무 시작일부터 다음 업무 전날까지입니다.";
       host.appendChild(hint);
 
-      var wd = document.createElement("div");
-      wd.className = "sched-wd";
-      wd.setAttribute("aria-hidden", "true");
-      WEEKDAYS.forEach(function (name) {
-        var span = document.createElement("span");
-        span.textContent = name;
-        wd.appendChild(span);
-      });
-      host.appendChild(wd);
+      var totalDays = schedRanges.reduce(function (sum, range) { return sum + range.days; }, 0);
+      var origin = schedRanges[0].start;
+      var finish = schedRanges[schedRanges.length - 1].end;
 
-      var weeks = document.createElement("div");
-      weeks.className = "sched-weeks";
-      var first = new Date(y, m, 1);
-      var startPad = first.getDay();
-      var startCell = new Date(y, m, 1 - startPad);
+      var scroll = document.createElement("div");
+      scroll.className = "sched-hscroll";
+      var timeline = document.createElement("div");
+      timeline.className = "sched-timeline";
+      timeline.style.minWidth = Math.max(720, totalDays * 4) + "px";
 
-      for (var w = 0; w < 6; w++) {
-        var weekStart = addDays(startCell, w * 7);
-        var weekEnd = addDays(weekStart, 6);
-        var week = document.createElement("div");
-        week.className = "sched-week";
-
-        var days = document.createElement("div");
-        days.className = "sched-days";
-        for (var d = 0; d < 7; d++) {
-          var day = addDays(weekStart, d);
-          var cell = document.createElement("div");
-          cell.className = "sched-day";
-          if (day.getMonth() !== m) cell.classList.add("out");
-          if (sameDay(day, today)) cell.classList.add("today");
-          cell.textContent = String(day.getDate());
-          days.appendChild(cell);
-        }
-        week.appendChild(days);
-
-        var lanes = document.createElement("div");
-        lanes.className = "sched-lanes";
-        schedRanges.forEach(function (range) {
-          if (range.end < weekStart || range.start > weekEnd) return;
-          var segStart = range.start > weekStart ? range.start : weekStart;
-          var segEnd = range.end < weekEnd ? range.end : weekEnd;
-          var colStart = Math.round((segStart - weekStart) / DAY) + 1;
-          var colEnd = Math.round((segEnd - weekStart) / DAY) + 2;
-          var bar = document.createElement("div");
-          var isStart = sameDay(segStart, range.start);
-          bar.className = "sched-bar tone-" + range.tone + (range.key ? " key" : "") + (range.past ? " past" : "") + (isStart ? "" : " cont");
-          bar.style.gridColumn = colStart + " / " + colEnd;
-          bar.style.gridRow = "1";
-          bar.textContent = isStart ? range.name : "·";
-          bar.title = range.name + " · " + fmt(range.start) + " ~ " + fmt(range.end) + (range.off ? " · " + range.off : "");
-          lanes.appendChild(bar);
-        });
-        week.appendChild(lanes);
-        weeks.appendChild(week);
+      var axis = document.createElement("div");
+      axis.className = "sched-axis";
+      var cursor = new Date(origin.getFullYear(), origin.getMonth(), 1);
+      var endMonth = new Date(finish.getFullYear(), finish.getMonth(), 1);
+      while (cursor <= endMonth) {
+        var mark = document.createElement("span");
+        mark.className = "sched-month-mark";
+        var offset = Math.max(0, (cursor - origin) / DAY);
+        var pct = (offset / totalDays) * 100;
+        mark.style.left = Math.min(100, Math.max(0, pct)) + "%";
+        mark.textContent = cursor.getFullYear() + "." + String(cursor.getMonth() + 1).padStart(2, "0");
+        axis.appendChild(mark);
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
       }
-      host.appendChild(weeks);
+      timeline.appendChild(axis);
+
+      var track = document.createElement("div");
+      track.className = "sched-track";
+      track.setAttribute("role", "list");
+      schedRanges.forEach(function (range) {
+        var bar = document.createElement("div");
+        bar.className = "sched-bar tone-" + range.tone + (range.key ? " key" : "") + (range.past ? " past" : "");
+        bar.style.flex = range.days + " 1 0";
+        bar.setAttribute("role", "listitem");
+        bar.textContent = range.name;
+        bar.title = range.name + " · " + fmt(range.start) + " ~ " + fmt(range.end) + (range.off ? " · " + range.off : "");
+        track.appendChild(bar);
+      });
+      timeline.appendChild(track);
+
+      var ends = document.createElement("div");
+      ends.className = "sched-ends";
+      ends.innerHTML = "<span>" + fmt(origin) + "</span><span>" + fmt(finish) + "</span>";
+      timeline.appendChild(ends);
+
+      scroll.appendChild(timeline);
+      host.appendChild(scroll);
 
       var list = document.createElement("ul");
       list.className = "sched-ranges";
+      var toneColors = ["#27c4d5", "#2ea090", "#5498ff", "#7ddecb", "#fae100", "#9aa4b2"];
       schedRanges.forEach(function (range) {
         var li = document.createElement("li");
         var sw = document.createElement("span");
         sw.className = "swatch";
-        var toneColors = ["#27c4d5", "#2ea090", "#5498ff", "#7ddecb", "#fae100", "#9aa4b2"];
         sw.style.background = toneColors[range.tone];
         var when = document.createElement("span");
         when.className = "when";
@@ -341,19 +297,6 @@
         list.appendChild(li);
       });
       host.appendChild(list);
-
-      prev.addEventListener("click", function () {
-        if (prev.disabled) return;
-        schedView.m -= 1;
-        if (schedView.m < 0) { schedView.m = 11; schedView.y -= 1; }
-        renderScheduleCalendar(today);
-      });
-      next.addEventListener("click", function () {
-        if (next.disabled) return;
-        schedView.m += 1;
-        if (schedView.m > 11) { schedView.m = 0; schedView.y += 1; }
-        renderScheduleCalendar(today);
-      });
     }
 
     function plan() {
@@ -374,14 +317,6 @@
       var now = new Date();
       var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       schedRanges = buildRanges(target, today);
-      schedBounds = {
-        min: schedRanges[0].start,
-        max: schedRanges[schedRanges.length - 1].end
-      };
-      var focus = schedRanges[0].start;
-      if (!schedView || focus.getFullYear() !== schedView._seedY || focus.getMonth() !== schedView._seedM) {
-        schedView = { y: focus.getFullYear(), m: focus.getMonth(), _seedY: focus.getFullYear(), _seedM: focus.getMonth() };
-      }
       schedRanges.forEach(function (range) {
         if (steps) {
           var li = document.createElement("li");
@@ -389,7 +324,7 @@
           steps.appendChild(li);
         }
       });
-      renderScheduleCalendar(today);
+      renderScheduleCalendar();
       var start = new Date(target.getTime() - 30 * 7 * DAY);
       lastPlan = { target: target, start: start, late: start < today };
       var daysLeft = Math.round((start - today) / DAY);
@@ -408,14 +343,8 @@
 
     navi.addEventListener("change", function () { diagnose(); plan(); });
     navi.addEventListener("submit", function (e) { e.preventDefault(); });
-    $("p-target").addEventListener("change", function () {
-      schedView = null;
-      plan();
-    });
-    $("p-target").addEventListener("input", function () {
-      schedView = null;
-      plan();
-    });
+    $("p-target").addEventListener("change", plan);
+    $("p-target").addEventListener("input", plan);
     diagnose();
     plan();
 
