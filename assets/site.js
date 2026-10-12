@@ -298,7 +298,7 @@
         row.className = "plan-gantt-row";
         var label = document.createElement("div");
         label.className = "plan-label";
-        label.innerHTML = "<strong>" + range.name + "</strong><span>" + fmt(range.start) + " ~ " + fmt(range.end) + "</span>";
+        label.innerHTML = "<strong>" + range.name + "</strong><span>" + fmt(range.start) + "</span>";
         var track = document.createElement("div");
         track.className = "plan-track";
         var bar = document.createElement("span");
