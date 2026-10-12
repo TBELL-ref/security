@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>?�??진단 · ?�벨 ?�보보호 컨설??/title>
-<meta name="description" content="?�종�?규모�??�택?�면 ?�보보호 ?�무?� ?�증 착수 ?�정??바로 계산?�니??">
+<title>셀프 진단 · 티벨 정보보호 컨설팅</title>
+<meta name="description" content="업종과 규모를 선택하면 정보보호 의무와 인증 착수 일정을 바로 계산합니다.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
@@ -12,18 +12,18 @@
 <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
-<a class="skip" href="#content">본문?�로 건너?�기</a>
+<a class="skip" href="#content">본문으로 건너뛰기</a>
 <header class="topbar">
   <div class="wrap topbar-inner">
-    <a class="logo" href="index.html"><img class="logo-img" src="assets/tbell-logo.svg" alt="TBELL"><span class="logo-sub">?�보보호 컨설??/span></a>
+    <a class="logo" href="index.html"><img class="logo-img" src="assets/tbell-logo.svg" alt="TBELL"><span class="logo-sub">정보보호 컨설팅</span></a>
     <nav class="site-nav" id="site-nav" aria-label="주요 메뉴">
-      <a href="index.html">??/a>
-      <a href="diagnose.html">?�??진단</a>
-      <a href="services.html">?�비??/a>
-      <a href="certification.html">?�증</a>
+      <a href="index.html">홈</a>
+      <a href="diagnose.html">셀프 진단</a>
+      <a href="services.html">서비스</a>
+      <a href="certification.html">인증</a>
     </nav>
     <div class="top-actions">
-      <a class="btn btn-primary btn-sm" href="contact.html">?�담 ?�청</a>
+      <a class="btn btn-primary btn-sm" href="contact.html">상담 신청</a>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
         <span class="nav-toggle-bars" aria-hidden="true"></span>
         <span class="sr-only">메뉴</span>
@@ -36,51 +36,51 @@
   <header class="page-hero">
     <div class="wrap">
       <p class="eyebrow">Compliance Navigator</p>
-      <h1>질문???�하�??�무?� ?�정??바로 ?�옵?�다</h1>
-      <p class="lede">STEP 1?�서 ?�당?�는 ?�무�??�인?�고, STEP 2?�서 목표 ?�사?�을 ?�어 착수?�을 계산?�세?? STEP 3?�서 �?결과�?바로 ?�담???�청?????�습?�다.</p>
+      <h1>질문에 답하면 의무와 일정이 바로 나옵니다</h1>
+      <p class="lede">STEP 1에서 해당되는 의무를 확인하고, STEP 2에서 목표 심사일을 넣어 착수일을 계산하세요. STEP 3에서 그 결과로 바로 상담을 신청할 수 있습니다.</p>
     </div>
   </header>
-  <nav class="subnav" aria-label="???�이지">
+  <nav class="subnav" aria-label="이 페이지">
     <div class="wrap">
-      <a href="#step-1">?�무 진단</a>
-      <a href="#step-2">?�정 ??��</a>
-      <a href="#step-3">?�담 ?�청</a>
+      <a href="#step-1">의무 진단</a>
+      <a href="#step-2">일정 역산</a>
+      <a href="#step-3">상담 신청</a>
     </div>
   </nav>
 
   <section class="section" id="step-1">
     <div class="wrap">
       <div class="navi">
-        <form class="navi-q" id="navi-form" aria-label="?�무 진단 질문">
+        <form class="navi-q" id="navi-form" aria-label="의무 진단 질문">
           <div>
-            <div class="panel-k">STEP 1 · ?�무 진단</div>
-            <h2 class="panel-h">조직 ?�보�??�택?�세??/h2>
+            <div class="panel-k">STEP 1 · 의무 진단</div>
+            <h2 class="panel-h">조직 정보를 선택하세요</h2>
           </div>
           <div class="q-group">
-            <label class="q-label" for="q-sector">?�종</label>
+            <label class="q-label" for="q-sector">업종</label>
             <select id="q-sector">
-              <option value="online" selected>?�라???�비?�·플?�폼</option>
-              <option value="finance">금융·?�?�크</option>
-              <option value="medical">?�료(병원)</option>
-              <option value="univ">교육(?�??</option>
-              <option value="mfg">?�조</option>
-              <option value="public">공공기�?</option>
-              <option value="etc">기�?</option>
+              <option value="online" selected>온라인 서비스·플랫폼</option>
+              <option value="finance">금융·핀테크</option>
+              <option value="medical">의료(병원)</option>
+              <option value="univ">교육(대학)</option>
+              <option value="mfg">제조</option>
+              <option value="public">공공기관</option>
+              <option value="etc">기타</option>
             </select>
           </div>
           <fieldset class="q-group">
-            <legend>?�당?�는 ??��??모두 고르?�요</legend>
-            <label class="check"><input type="checkbox" id="q-rev" checked>?�보?�신?�비??부�??�년??매출 100?????�상</label>
-            <label class="check"><input type="checkbox" id="q-users">직전 3개월 ?�평�??�용??100�?�??�상</label>
-            <label class="check"><input type="checkbox" id="q-infra">?�국 ?�위 ?�신�??�업(ISP) ?�는 ?�이?�센??IDC) ?�영</label>
-            <label class="check"><input type="checkbox" id="q-pii" checked>개인?�보 보유 규모가 100�?�??�상</label>
-            <label class="check"><input type="checkbox" id="q-ai" checked>AI 기능???�어�??�비?��? ?�공?�거??준�?�?/label>
-            <label class="check"><input type="checkbox" id="q-global">?�외 고객?��? ?�거???�외 진출 ?�정</label>
-            <label class="check"><input type="checkbox" id="q-cloud">공공기�???SaaS·?�라?�드 ?�비?��? 공급?�거???�정</label>
-            <label class="check"><input type="checkbox" id="q-listed">?�장?�이거나 ??매출 3,000?????�상</label>
+            <legend>해당하는 항목을 모두 고르세요</legend>
+            <label class="check"><input type="checkbox" id="q-rev" checked>정보통신서비스 부문 전년도 매출 100억 원 이상</label>
+            <label class="check"><input type="checkbox" id="q-users">직전 3개월 일평균 이용자 100만 명 이상</label>
+            <label class="check"><input type="checkbox" id="q-infra">전국 단위 통신망 사업(ISP) 또는 데이터센터(IDC) 운영</label>
+            <label class="check"><input type="checkbox" id="q-pii" checked>개인정보 보유 규모가 100만 명 이상</label>
+            <label class="check"><input type="checkbox" id="q-ai" checked>AI 기능이 들어간 서비스를 제공하거나 준비 중</label>
+            <label class="check"><input type="checkbox" id="q-global">해외 고객사가 있거나 해외 진출 예정</label>
+            <label class="check"><input type="checkbox" id="q-cloud">공공기관에 SaaS·클라우드 서비스를 공급하거나 예정</label>
+            <label class="check"><input type="checkbox" id="q-listed">상장사이거나 연 매출 3,000억 원 이상</label>
           </fieldset>
           <fieldset class="q-group">
-            <legend>보유 중인 ?�증</legend>
+            <legend>보유 중인 인증</legend>
             <div class="pills">
               <label><input type="checkbox" id="h-isms" checked>ISMS</label>
               <label><input type="checkbox" id="h-ismsp">ISMS-P</label>
@@ -91,23 +91,23 @@
         <div class="navi-r" aria-live="polite">
           <div>
             <div class="panel-k">결과</div>
-            <h2 class="panel-h" id="r-title">검?��? ?�요????��</h2>
+            <h2 class="panel-h" id="r-title">검토가 필요한 항목</h2>
           </div>
           <p class="r-sum" id="r-sum"></p>
           <ul class="r-list" id="r-list"></ul>
-          <p class="note">처음 ?�면?� ?�시 ?�택 ?�태?�니?? 결과??공개??법령·?��? 발표�?바탕?�로 ??참고?�이�? 최종 ?�당 ?��????�담?�서 ?�인?�니??</p>
+          <p class="note">처음 화면은 예시 선택 상태입니다. 결과는 공개된 법령·정부 발표를 바탕으로 한 참고용이며, 최종 해당 여부는 상담에서 확인합니다.</p>
         </div>
       </div>
 
       <div class="planner" id="step-2">
         <div class="plan-top">
           <div>
-            <div class="panel-k">STEP 2 · 목표????��</div>
-            <h2 class="panel-h">?�제 ?�증?�사�?받을 계획?��???</h2>
-            <p class="note" style="margin-top: 6px;">?�벨 권장 ?�정(착수부???�사까�? ??30�???기�??�로, 목표 ?�사?�에??거꾸�?착수?�과 ?�증 ?�청?�을 계산?�니??</p>
+            <div class="panel-k">STEP 2 · 목표일 역산</div>
+            <h2 class="panel-h">언제 인증심사를 받을 계획인가요?</h2>
+            <p class="note" style="margin-top: 6px;">티벨 권장 일정(착수부터 심사까지 약 30주)을 기준으로, 목표 심사일에서 거꾸로 착수일과 인증 신청일을 계산합니다.</p>
           </div>
           <div class="plan-in">
-            <label for="p-target">목표 ?�증?�사 ?�작??/label>
+            <label for="p-target">목표 인증심사 시작일</label>
             <input type="date" id="p-target" value="2027-05-03">
           </div>
         </div>
@@ -117,11 +117,11 @@
 
       <div class="step-cta" id="step-3">
         <div class="txt">
-          <span class="panel-k">STEP 3 · ?�담 ?�청</span>
-          <strong>??결과�?컨설??계획??받아 보세??/strong>
-          <p>진단 결과?� 계산???�정???�담 ?�청?�에 ?�동?�로 ?�어갑니?? ?�름�??�락처만 ?�하�??�니??</p>
+          <span class="panel-k">STEP 3 · 상담 신청</span>
+          <strong>이 결과로 컨설팅 계획을 받아 보세요</strong>
+          <p>진단 결과와 계산한 일정이 상담 신청서에 자동으로 들어갑니다. 이름과 연락처만 더하면 됩니다.</p>
         </div>
-        <button type="button" class="btn btn-primary" id="to-contact">??결과�??�담 ?�청</button>
+        <button type="button" class="btn btn-primary" id="to-contact">이 결과로 상담 신청</button>
       </div>
     </div>
   </section>
@@ -129,9 +129,9 @@
 
 <footer class="site-foot">
   <div class="wrap foot-grid">
-    <div><img class="logo-img" src="assets/tbell-logo.svg" alt="TBELL"><p>?�보보호 컨설??v0.1</p></div>
-    <p>© TBELL Co., Ltd. · ?�?�이??김종균 · ?�업?�등록번??376-81-00089</p>
-    <p>(강남본사) ?�울?�별??강남�?강남?��?354, 9�?· (가?��??? ?�울?�별??금천�?가?�디지??�?168, A??601??/p>
+    <div><img class="logo-img" src="assets/tbell-logo.svg" alt="TBELL"><p>정보보호 컨설팅 · v0.1</p></div>
+    <p>© TBELL Co., Ltd. · 대표이사 김종균 · 사업자등록번호 376-81-00089</p>
+    <p>(강남본사) 서울특별시 강남구 강남대로 354, 9층 · (가산지사) 서울특별시 금천구 가산디지털1로 168, A동 601호</p>
     <p>Tel <a href="tel:07077779113">070-7777-9113</a> · <a href="mailto:security@tbell.co.kr">security@tbell.co.kr</a></p>
   </div>
 </footer>
