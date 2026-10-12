@@ -154,20 +154,23 @@
         : "";
     }
 
+    /* Week spans mirror certification.html ISMS-P gantt; start `w` drives reverse calc. */
     var PHASES = [
-      { w: -30, name: "착수·범위 정의", key: true },
-      { w: -28, name: "현황 분석·GAP" },
-      { w: -24, name: "위험평가·DoA 결정" },
-      { w: -22, name: "보호대책·정책 제·개정" },
-      { w: -18, name: "관리체계 운영 시작·임직원 교육", note: "신청 전 2개월 이상 운영" },
-      { w: -12, name: "내부점검·모의심사" },
-      { w: -9, name: "인증 신청", key: true },
-      { w: -6, name: "인증기관 예비점검", note: "심사 6~8주 전" },
-      { w: 0, name: "인증심사 시작", key: true },
-      { w: 10, name: "인증서 발급 예상", note: "보완조치·인증위원회 심의 후" }
+      { w: -30, endW: -28, name: "착수·범위 정의", group: "prep", key: true },
+      { w: -28, endW: -24, name: "현황 분석·GAP", group: "prep" },
+      { w: -24, endW: -20, name: "위험평가·DoA 결정", group: "prep" },
+      { w: -22, endW: -16, name: "보호대책·정책 제·개정", group: "prep" },
+      { w: -18, endW: 2, name: "관리체계 운영·증적 축적", group: "ops", note: "신청 전 2개월 이상 운영" },
+      { w: -18, endW: -16, name: "임직원 인증 교육", group: "ops" },
+      { w: -12, endW: -9, name: "내부점검·모의심사", group: "prep" },
+      { w: -9, endW: -8, name: "인증 신청", group: "prep", key: true },
+      { w: -6, endW: -4, name: "인증기관 예비점검", group: "audit", note: "심사 6~8주 전" },
+      { w: 0, endW: 2, name: "인증심사", group: "audit", key: true },
+      { w: 10, endW: 12, name: "인증서 발급 예상", group: "audit", note: "보완조치·인증위원회 심의 후" }
     ];
     var DAY = 86400000;
     var schedRanges = [];
+    var activePhase = 0;
 
     function fmt(d) {
       return d.getFullYear() + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + String(d.getDate()).padStart(2, "0");
@@ -184,132 +187,230 @@
     }
 
     function buildRanges(target, today) {
-      var starts = PHASES.map(function (phase) {
+      return PHASES.map(function (phase) {
+        var start = new Date(target.getTime() + phase.w * 7 * DAY);
+        var end = addDays(new Date(target.getTime() + phase.endW * 7 * DAY), -1);
+        if (end < start) end = start;
+        var weeks = Math.max(1, phase.endW - phase.w);
         return {
-          start: new Date(target.getTime() + phase.w * 7 * DAY),
+          start: start,
+          end: end,
+          weeks: weeks,
           name: phase.name,
           note: phase.note || "",
           key: !!phase.key,
-          w: phase.w
-        };
-      });
-      return starts.map(function (item, i) {
-        var end = i < starts.length - 1
-          ? addDays(starts[i + 1].start, -1)
-          : addDays(item.start, 13);
-        if (end < item.start) end = item.start;
-        var days = Math.round((end - item.start) / DAY) + 1;
-        return {
-          start: item.start,
-          end: end,
-          days: days,
-          name: item.name,
-          note: item.note,
-          key: item.key,
+          group: phase.group || "prep",
           past: end < today,
-          tone: i % 6,
-          off: (item.w === 0 ? "심사일" : (item.w < 0 ? "심사 " + (-item.w) + "주 전" : "심사 " + item.w + "주 후")) + (item.note ? " · " + item.note : "")
+          w: phase.w,
+          off: (phase.w === 0 ? "심사 주차" : (phase.w < 0 ? "심사 " + (-phase.w) + "주 전 시작" : "심사 " + phase.w + "주 후")) + (phase.note ? " · " + phase.note : "")
         };
       });
     }
 
-    function renderScheduleCalendar() {
+    function clear(el) {
+      if (el) el.textContent = "";
+    }
+
+    function renderSummary(target, start, today, daysLeft) {
+      var host = $("plan-summary");
+      if (!host) return;
+      clear(host);
+      var cards = [
+        {
+          k: "준비 시작일",
+          v: fmt(start),
+          s: daysLeft >= 0 ? "권장 착수일 · D-" + daysLeft : "권장 착수일이 지남",
+          cls: daysLeft >= 0 ? "is-focus" : "is-warn"
+        },
+        {
+          k: "목표 심사일",
+          v: fmt(target),
+          s: "인증심사 시작 기준",
+          cls: ""
+        },
+        daysLeft >= 0
+          ? {
+            k: "일정 여유",
+            v: "D-" + daysLeft,
+            s: "권장 일정으로 충분합니다",
+            cls: "is-ok"
+          }
+          : {
+            k: "일정 부족",
+            v: "약 " + Math.ceil(-daysLeft / 7) + "주",
+            s: "단축·병행 일정이 필요합니다",
+            cls: "is-warn"
+          }
+      ];
+      if (target <= today) {
+        cards[2] = {
+          k: "일정 상태",
+          v: "목표일 경과",
+          s: "다른 심사일을 선택하세요",
+          cls: "is-warn"
+        };
+      }
+      cards.forEach(function (card) {
+        var art = document.createElement("article");
+        art.className = "plan-metric" + (card.cls ? " " + card.cls : "");
+        art.innerHTML = "<div class=\"k\">" + card.k + "</div><div class=\"v\">" + card.v + "</div><div class=\"s\">" + card.s + "</div>";
+        host.appendChild(art);
+      });
+    }
+
+    function setActivePhase(index) {
+      activePhase = index;
+      var rows = document.querySelectorAll(".plan-gantt-row");
+      rows.forEach(function (row, i) {
+        row.classList.toggle("is-active", i === index);
+      });
+      var detail = $("plan-detail");
+      var range = schedRanges[index];
+      if (!detail || !range) return;
+      detail.innerHTML =
+        "<div class=\"d-k\">선택한 단계</div>" +
+        "<div class=\"d-v\"><b>" + range.name + "</b> · " + fmt(range.start) + " ~ " + fmt(range.end) +
+        " · 약 " + range.weeks + "주" +
+        (range.off ? "<br>" + range.off : "") +
+        (range.note && range.off.indexOf(range.note) === -1 ? "<br>" + range.note : "") +
+        "</div>";
+    }
+
+    function renderGantt() {
       var host = $("sched-cal");
       if (!host) return;
-      host.textContent = "";
+      clear(host);
       if (!schedRanges.length) return;
 
-      var hint = document.createElement("p");
-      hint.className = "sched-hint";
-      hint.textContent = "가로 타임라인 · 각 구간은 업무 시작일부터 다음 업무 전날까지입니다.";
-      host.appendChild(hint);
+      var origin = schedRanges.reduce(function (min, r) { return r.start < min ? r.start : min; }, schedRanges[0].start);
+      var finish = schedRanges.reduce(function (max, r) { return r.end > max ? r.end : max; }, schedRanges[0].end);
+      var span = Math.max(DAY, finish - origin + DAY);
 
-      var totalDays = schedRanges.reduce(function (sum, range) { return sum + range.days; }, 0);
-      var origin = schedRanges[0].start;
-      var finish = schedRanges[schedRanges.length - 1].end;
+      var gantt = document.createElement("div");
+      gantt.className = "plan-gantt";
+      gantt.setAttribute("role", "img");
+      gantt.setAttribute("aria-label", "목표 심사일 기준 역산 준비 일정 간트 차트");
 
-      var scroll = document.createElement("div");
-      scroll.className = "sched-hscroll";
-      var timeline = document.createElement("div");
-      timeline.className = "sched-timeline";
-      timeline.style.minWidth = Math.max(720, totalDays * 4) + "px";
-
-      var axis = document.createElement("div");
-      axis.className = "sched-axis";
+      var head = document.createElement("div");
+      head.className = "plan-gantt-head";
+      head.innerHTML = "<div class=\"spacer\"></div>";
+      var months = document.createElement("div");
+      months.className = "plan-months";
       var cursor = new Date(origin.getFullYear(), origin.getMonth(), 1);
       var endMonth = new Date(finish.getFullYear(), finish.getMonth(), 1);
       while (cursor <= endMonth) {
         var mark = document.createElement("span");
-        mark.className = "sched-month-mark";
-        var offset = Math.max(0, (cursor - origin) / DAY);
-        var pct = (offset / totalDays) * 100;
-        mark.style.left = Math.min(100, Math.max(0, pct)) + "%";
-        mark.textContent = cursor.getFullYear() + "." + String(cursor.getMonth() + 1).padStart(2, "0");
-        axis.appendChild(mark);
+        mark.className = "plan-month";
+        var pct = ((cursor - origin) / span) * 100;
+        if (pct >= -2 && pct <= 102) {
+          mark.style.left = Math.max(0, Math.min(100, pct)) + "%";
+          mark.textContent = cursor.getFullYear() + "." + String(cursor.getMonth() + 1).padStart(2, "0");
+          months.appendChild(mark);
+        }
         cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
       }
-      timeline.appendChild(axis);
+      head.appendChild(months);
+      gantt.appendChild(head);
 
-      var track = document.createElement("div");
-      track.className = "sched-track";
-      track.setAttribute("role", "list");
-      schedRanges.forEach(function (range) {
-        var bar = document.createElement("div");
-        bar.className = "sched-bar tone-" + range.tone + (range.key ? " key" : "") + (range.past ? " past" : "");
-        bar.style.flex = range.days + " 1 0";
-        bar.setAttribute("role", "listitem");
-        bar.textContent = range.name;
-        bar.title = range.name + " · " + fmt(range.start) + " ~ " + fmt(range.end) + (range.off ? " · " + range.off : "");
+      schedRanges.forEach(function (range, index) {
+        var row = document.createElement("div");
+        row.className = "plan-gantt-row";
+        row.tabIndex = 0;
+        row.setAttribute("role", "button");
+        row.setAttribute("aria-pressed", index === activePhase ? "true" : "false");
+        var label = document.createElement("div");
+        label.className = "plan-label";
+        label.innerHTML = "<strong>" + range.name + "</strong><span>" + fmt(range.start) + " ~ " + fmt(range.end) + "</span>";
+        var track = document.createElement("div");
+        track.className = "plan-track";
+        var bar = document.createElement("span");
+        bar.className = "plan-bar group-" + range.group + (range.past ? " is-past" : "");
+        var left = ((range.start - origin) / span) * 100;
+        var width = ((range.end - range.start + DAY) / span) * 100;
+        bar.style.left = Math.max(0, left) + "%";
+        bar.style.width = Math.max(0.8, width) + "%";
+        bar.title = range.name + " · " + fmt(range.start) + " ~ " + fmt(range.end);
         track.appendChild(bar);
+        row.appendChild(label);
+        row.appendChild(track);
+        row.addEventListener("click", function () { setActivePhase(index); });
+        row.addEventListener("mouseenter", function () { setActivePhase(index); });
+        row.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setActivePhase(index);
+          }
+        });
+        gantt.appendChild(row);
       });
-      timeline.appendChild(track);
 
-      var ends = document.createElement("div");
-      ends.className = "sched-ends";
-      ends.innerHTML = "<span>" + fmt(origin) + "</span><span>" + fmt(finish) + "</span>";
-      timeline.appendChild(ends);
+      host.appendChild(gantt);
 
-      scroll.appendChild(timeline);
-      host.appendChild(scroll);
+      var legend = document.createElement("div");
+      legend.className = "plan-gantt-legend";
+      legend.innerHTML =
+        "<span><i class=\"lg-prep\"></i>준비·컨설팅 단계</span>" +
+        "<span><i class=\"lg-ops\"></i>고객 운영 기간</span>" +
+        "<span><i class=\"lg-audit\"></i>인증기관 일정</span>";
+      host.appendChild(legend);
 
-      var list = document.createElement("ul");
-      list.className = "sched-ranges";
-      var toneColors = ["#27c4d5", "#2ea090", "#5498ff", "#7ddecb", "#fae100", "#9aa4b2"];
-      schedRanges.forEach(function (range) {
-        var li = document.createElement("li");
-        var sw = document.createElement("span");
-        sw.className = "swatch";
-        sw.style.background = toneColors[range.tone];
-        var when = document.createElement("span");
-        when.className = "when";
-        when.textContent = fmt(range.start) + " ~ " + fmt(range.end);
-        var what = document.createElement("span");
-        what.className = "what";
-        what.textContent = range.name;
-        if (range.off) {
-          var small = document.createElement("small");
-          small.textContent = range.off;
-          what.appendChild(small);
-        }
-        li.appendChild(sw);
-        li.appendChild(when);
-        li.appendChild(what);
-        list.appendChild(li);
-      });
-      host.appendChild(list);
+      var detail = document.createElement("div");
+      detail.className = "plan-detail";
+      detail.id = "plan-detail";
+      host.appendChild(detail);
+      if (activePhase >= schedRanges.length) activePhase = 0;
+      setActivePhase(activePhase);
+    }
+
+    function renderStatus(target, start, today, daysLeft) {
+      var verdict = $("p-verdict");
+      if (!verdict) return;
+      clear(verdict);
+      if (target <= today) {
+        verdict.className = "plan-status is-warn";
+        verdict.innerHTML =
+          "<div class=\"status-line\"><span class=\"status-badge\">목표일 경과</span>" +
+          "<span class=\"status-msg\">목표 심사일이 오늘 이전입니다. 날짜를 다시 선택해 주세요.</span></div>";
+        return;
+      }
+      if (daysLeft >= 0) {
+        verdict.className = "plan-status is-ok";
+        verdict.innerHTML =
+          "<div class=\"status-line\"><span class=\"status-badge\">일정 가능</span>" +
+          "<span class=\"status-msg\">늦어도 <b>" + fmt(start) + "</b>까지 착수하면 권장 일정을 유지할 수 있습니다.</span></div>";
+        return;
+      }
+      var shortWeeks = Math.ceil(-daysLeft / 7);
+      var adjustFocus = "현황 분석·GAP ~ 보호대책·정책";
+      if (shortWeeks <= 4) adjustFocus = "착수·범위 정의 ~ 현황 분석·GAP";
+      else if (shortWeeks >= 12) adjustFocus = "착수 전 범위 축소와 앞 단계 병행";
+      verdict.className = "plan-status is-warn";
+      var reuse = (on("h-iso") || on("h-isms"))
+        ? " 보유 인증 증적을 다시 쓰면 앞 준비 단계를 줄일 수 있습니다."
+        : "";
+      verdict.innerHTML =
+        "<div class=\"status-line\"><span class=\"status-badge\">부족 약 " + shortWeeks + "주</span>" +
+        "<span class=\"status-msg\">권장 착수일 <b>" + fmt(start) + "</b> 기준으로 일정이 부족합니다.</span></div>" +
+        "<p class=\"status-adjust\">우선 조정 구간: <b style=\"color:var(--ink);font-weight:500\">" + adjustFocus + "</b>. 신청 전 관리체계 운영 2개월은 줄이기 어렵습니다.</p>" +
+        "<details><summary>가능한 일정 조정 방안</summary>" +
+        "<p>범위를 좁히거나 분석·대책 단계를 병행하는 단축 일정이 필요합니다." + reuse +
+        " 목표 심사일을 뒤로 미루면 권장 일정으로 다시 맞출 수 있습니다.</p></details>";
     }
 
     function plan() {
       var value = $("p-target").value;
       var steps = $("p-steps");
-      var verdict = $("p-verdict");
-      var host = $("sched-cal");
-      if (steps) steps.textContent = "";
-      if (host) host.textContent = "";
+      clear(steps);
+      clear($("plan-summary"));
+      clear($("sched-cal"));
+      clear($("p-verdict"));
       var target = parseIso(value);
       if (!value || !target) {
-        verdict.className = "p-verdict";
-        verdict.textContent = "목표 심사 시작일을 선택하세요.";
+        var verdict = $("p-verdict");
+        if (verdict) {
+          verdict.className = "plan-status";
+          verdict.textContent = "목표 심사 시작일을 선택하세요.";
+        }
         lastPlan = null;
         schedRanges = [];
         return;
@@ -324,21 +425,12 @@
           steps.appendChild(li);
         }
       });
-      renderScheduleCalendar();
       var start = new Date(target.getTime() - 30 * 7 * DAY);
-      lastPlan = { target: target, start: start, late: start < today };
       var daysLeft = Math.round((start - today) / DAY);
-      if (target <= today) {
-        verdict.className = "p-verdict late";
-        verdict.textContent = "목표일이 이미 지났거나 오늘입니다. 다른 날짜를 선택하세요.";
-      } else if (daysLeft >= 0) {
-        verdict.className = "p-verdict ok";
-        verdict.innerHTML = "늦어도 <b>" + fmt(start) + "</b>까지 착수하면 권장 일정으로 가능합니다. 착수까지 <b>D-" + daysLeft + "</b>.";
-      } else {
-        var shortWeeks = Math.ceil(-daysLeft / 7);
-        verdict.className = "p-verdict late";
-        verdict.innerHTML = "권장 일정보다 <b>약 " + shortWeeks + "주</b>가 부족합니다. 신청 전 관리체계 운영 2개월은 줄일 수 없으므로, 범위를 좁히거나 분석·대책 단계를 병행하는 단축 일정이 필요합니다." + (on("h-iso") || on("h-isms") ? " 보유 인증의 증적을 다시 쓰면 앞 단계를 줄일 수 있습니다." : "");
-      }
+      lastPlan = { target: target, start: start, late: start < today };
+      renderSummary(target, start, today, daysLeft);
+      renderGantt();
+      renderStatus(target, start, today, daysLeft);
     }
 
     navi.addEventListener("change", function () { diagnose(); plan(); });
