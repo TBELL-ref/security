@@ -358,159 +358,107 @@ a:hover { text-decoration: underline; }
 .r-empty { color: var(--muted); font-size: 14px; padding: 16px; border: 1px dashed var(--line); }
 
 .planner {
-  border: 1px solid var(--line); background: var(--bg-raise); padding: 26px 24px; display: grid; gap: 20px;
+  border: 1px solid var(--line); background: var(--bg-raise); padding: 26px 24px; display: grid; gap: 18px;
 }
-.plan-intro { display: grid; gap: 6px; max-width: 52rem; }
-.plan-cal-layout {
+.plan-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 280px); gap: 20px; align-items: end; }
+.plan-in { display: grid; gap: 6px; }
+.sched-cal { display: grid; gap: 16px; }
+.sched-legend {
+  display: flex; flex-wrap: wrap; gap: 8px 14px;
+  font-size: 12px; color: var(--muted);
+}
+.sched-legend span {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.sched-legend i {
+  display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+}
+.sched-legend .lg-key { background: var(--cyan); }
+.sched-legend .lg-phase { background: rgba(255, 255, 255, 0.35); }
+.sched-legend .lg-past { background: rgba(255, 67, 67, 0.55); }
+.sched-months {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-  gap: 24px 28px;
-  align-items: start;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
 }
-.cal {
-  position: relative;
+.sched-month {
   background: var(--bg-sunken);
   border: 1px solid var(--line);
-  padding: 18px 16px 16px;
+  padding: 14px 12px 12px;
   display: grid;
-  gap: 12px;
-}
-.cal-head {
-  display: grid;
-  grid-template-columns: 40px 1fr 40px;
-  align-items: center;
   gap: 8px;
 }
-.cal-label {
+.sched-month h3 {
   margin: 0;
-  text-align: center;
-  font-size: 1.125rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
-.cal-nav {
-  width: 40px; height: 40px;
-  border: 1px solid var(--line-strong);
-  background: transparent;
-  color: var(--ink);
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-}
-.cal-nav:hover { border-color: var(--cyan); color: var(--cyan); }
-.cal-weekdays {
+.sched-wd,
+.sched-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+.sched-wd span {
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  padding-bottom: 2px;
 }
-.cal-weekdays span:first-child { color: #ff8d8d; }
-.cal-weekdays span:last-child { color: var(--cyan); }
-.cal-grid {
+.sched-wd span:first-child { color: #ff8d8d; }
+.sched-wd span:last-child { color: var(--cyan); }
+.sched-cell {
+  min-height: 54px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 3px 3px 4px;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  grid-template-rows: auto 1fr;
+  gap: 2px;
+  align-content: start;
 }
-.cal-day {
-  position: relative;
-  aspect-ratio: 1;
-  min-height: 40px;
-  border: 1px solid transparent;
+.sched-cell.out {
+  opacity: 0.28;
   background: transparent;
-  color: var(--ink);
+  border-color: transparent;
+}
+.sched-cell.today { box-shadow: inset 0 0 0 1px var(--line-strong); }
+.sched-cell.has-event { border-color: rgba(39, 196, 213, 0.28); background: rgba(39, 196, 213, 0.06); }
+.sched-cell.has-key { border-color: rgba(39, 196, 213, 0.55); background: rgba(39, 196, 213, 0.12); }
+.sched-cell.has-past { border-color: rgba(255, 67, 67, 0.35); background: rgba(255, 67, 67, 0.08); }
+.sched-num {
   font-family: var(--font-num);
-  font-size: 13px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  padding: 0 0 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.cal-day:hover:not(:disabled) { border-color: var(--line-strong); background: rgba(255, 255, 255, 0.04); }
-.cal-day.out { color: var(--muted); opacity: 0.45; }
-.cal-day.today { box-shadow: inset 0 0 0 1px var(--line-strong); }
-.cal-day.selected {
-  background: rgba(39, 196, 213, 0.18);
-  border-color: var(--cyan);
-  color: var(--cyan);
-  font-weight: 700;
-}
-.cal-day.mark-start::after,
-.cal-day.mark-apply::after,
-.cal-day.mark-audit::after {
-  content: "";
-  position: absolute;
-  bottom: 5px;
-  left: 50%;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  transform: translateX(-50%);
-}
-.cal-day.mark-start::after { background: var(--green); }
-.cal-day.mark-apply::after { background: var(--warn); }
-.cal-day.mark-audit::after { background: var(--cyan); }
-.cal-day.mark-start.mark-apply::after,
-.cal-day.mark-start.mark-audit::after,
-.cal-day.mark-apply.mark-audit::after {
-  width: 12px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--green), var(--cyan));
-}
-.cal-day:disabled { cursor: default; opacity: 0.35; }
-.cal-native {
-  position: absolute;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0, 0, 0, 0);
-  white-space: nowrap; border: 0;
-}
-.cal-selected {
-  margin: 0;
-  font-size: 14px;
   color: var(--muted-2);
-  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
-.cal-selected b { color: var(--cyan); font-weight: 600; }
-.cal-legend {
-  list-style: none; margin: 0; padding: 10px 0 0;
-  border-top: 1px solid var(--line);
-  display: flex; flex-wrap: wrap; gap: 10px 14px;
-  font-size: 12px; color: var(--muted);
+.sched-events { display: grid; gap: 2px; min-width: 0; }
+.sched-ev {
+  display: block;
+  font-size: 10px;
+  line-height: 1.25;
+  padding: 2px 3px;
+  border-left: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--muted-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.cal-legend .dot {
-  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-  margin-right: 6px; vertical-align: middle;
+.sched-ev.key {
+  border-left-color: var(--cyan);
+  color: var(--ink);
+  font-weight: 600;
 }
-.cal-legend .dot.start { background: var(--green); }
-.cal-legend .dot.apply { background: var(--warn); }
-.cal-legend .dot.audit { background: var(--cyan); }
-.plan-aside {
-  min-height: 0;
-  max-height: 420px;
-  overflow: auto;
-  border: 1px solid var(--line);
-  background: var(--bg);
-  padding: 4px 16px;
+.sched-ev.past {
+  border-left-color: var(--alert);
+  color: #ff8d8d;
+  text-decoration: line-through;
 }
-.p-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
-.p-steps li {
-  display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 2px 16px;
-  grid-template-areas: "date name" "date off";
-  padding: 12px 0; border-bottom: 1px solid var(--line); align-items: center;
-}
-.p-steps li:last-child { border-bottom: 0; }
-.p-date { grid-area: date; font-family: var(--font-num); font-weight: 600; font-variant-numeric: tabular-nums; }
-.p-steps li.past .p-date { color: var(--alert); text-decoration: line-through; }
-.p-steps li.key .p-date { color: var(--cyan); }
-.p-name { grid-area: name; font-weight: 600; }
-.p-off { grid-area: off; color: var(--muted); font-size: 12px; }
 .p-verdict { padding: 14px 16px; border: 1px solid var(--line); font-size: 15px; }
 .p-verdict.ok { border-color: rgba(46, 160, 144, 0.7); background: rgba(46, 160, 144, 0.1); }
 .p-verdict.late { border-color: rgba(255, 67, 67, 0.7); background: rgba(255, 67, 67, 0.08); }
@@ -675,8 +623,7 @@ table.map { width: 100%; min-width: 760px; border-collapse: collapse; font-size:
 .site-foot a { color: var(--muted-2); }
 
 @media (max-width: 980px) {
-  .hero-grid, .navi, .contact-grid, .plan-cal-layout, .domain { grid-template-columns: minmax(0, 1fr); }
-  .plan-aside { max-height: none; }
+  .hero-grid, .navi, .contact-grid, .plan-top, .domain { grid-template-columns: minmax(0, 1fr); }
   .navi-q { border-right: 0; border-bottom: 1px solid var(--line); }
   .principles, .cert-grid, .plans, .method { grid-template-columns: 1fr 1fr; }
   .promise, .cycle, .domain-links, .cert-alert { grid-template-columns: 1fr 1fr; }
@@ -688,7 +635,7 @@ table.map { width: 100%; min-width: 760px; border-collapse: collapse; font-size:
   .metrics, .principles, .promise, .cycle, .domain-links, .cert-alert, .cert-grid, .plans, .method, .items, .survey-grid, .inquiry {
     grid-template-columns: minmax(0, 1fr);
   }
-  .p-steps li { grid-template-columns: 1fr; grid-template-areas: "date" "name" "off"; align-items: start; }
+  .sched-cell { min-height: 44px; }
   .r-item { grid-template-columns: 1fr; }
   .item:nth-last-child(2) { border-bottom: 1px dashed var(--line); }
 }

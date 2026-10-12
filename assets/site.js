@@ -167,7 +167,7 @@
       { w: 10, name: "인증서 발급 예상", note: "보완조치·인증위원회 심의 후" }
     ];
     var DAY = 86400000;
-    var calView = null;
+    var WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
     function fmt(d) {
       return d.getFullYear() + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + String(d.getDate()).padStart(2, "0");
@@ -187,97 +187,129 @@
       return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
     }
 
-    function renderCalendar(target) {
-      var grid = $("cal-grid");
-      var label = $("cal-label");
-      var selectedEl = $("cal-selected");
-      if (!grid || !label) return;
-      if (!calView) {
-        var seed = target || parseIso($("p-target").value) || new Date();
-        calView = { y: seed.getFullYear(), m: seed.getMonth() };
-      }
-      label.textContent = calView.y + "." + String(calView.m + 1).padStart(2, "0");
-      var now = new Date();
-      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      var first = new Date(calView.y, calView.m, 1);
-      var startPad = first.getDay();
-      var startCell = new Date(calView.y, calView.m, 1 - startPad);
-      var marks = {};
-      if (target) {
-        var start = new Date(target.getTime() - 30 * 7 * DAY);
-        var apply = new Date(target.getTime() - 9 * 7 * DAY);
-        marks[iso(start)] = (marks[iso(start)] || "") + " mark-start";
-        marks[iso(apply)] = (marks[iso(apply)] || "") + " mark-apply";
-        marks[iso(target)] = (marks[iso(target)] || "") + " mark-audit";
-      }
-      grid.textContent = "";
-      for (var i = 0; i < 42; i++) {
-        var d = new Date(startCell.getFullYear(), startCell.getMonth(), startCell.getDate() + i);
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "cal-day";
-        btn.textContent = String(d.getDate());
-        btn.setAttribute("role", "gridcell");
-        btn.setAttribute("aria-label", fmt(d));
-        if (d.getMonth() !== calView.m) btn.classList.add("out");
-        if (sameDay(d, today)) btn.classList.add("today");
-        if (target && sameDay(d, target)) {
-          btn.classList.add("selected");
-          btn.setAttribute("aria-selected", "true");
+    function renderScheduleCalendar(events, today) {
+      var host = $("sched-cal");
+      if (!host) return;
+      host.textContent = "";
+      if (!events.length) return;
+
+      var legend = document.createElement("div");
+      legend.className = "sched-legend";
+      legend.innerHTML = "<span><i class=\"lg-key\"></i>핵심 일정</span><span><i class=\"lg-phase\"></i>단계</span><span><i class=\"lg-past\"></i>지난 일정</span>";
+      host.appendChild(legend);
+
+      var byDay = {};
+      var minD = events[0].date;
+      var maxD = events[0].date;
+      events.forEach(function (ev) {
+        var key = iso(ev.date);
+        if (!byDay[key]) byDay[key] = [];
+        byDay[key].push(ev);
+        if (ev.date < minD) minD = ev.date;
+        if (ev.date > maxD) maxD = ev.date;
+      });
+
+      var months = document.createElement("div");
+      months.className = "sched-months";
+      var cursor = new Date(minD.getFullYear(), minD.getMonth(), 1);
+      var endMonth = new Date(maxD.getFullYear(), maxD.getMonth(), 1);
+      while (cursor <= endMonth) {
+        var y = cursor.getFullYear();
+        var m = cursor.getMonth();
+        var card = document.createElement("article");
+        card.className = "sched-month";
+        var title = document.createElement("h3");
+        title.textContent = y + "." + String(m + 1).padStart(2, "0");
+        card.appendChild(title);
+
+        var wd = document.createElement("div");
+        wd.className = "sched-wd";
+        wd.setAttribute("aria-hidden", "true");
+        WEEKDAYS.forEach(function (label) {
+          var span = document.createElement("span");
+          span.textContent = label;
+          wd.appendChild(span);
+        });
+        card.appendChild(wd);
+
+        var grid = document.createElement("div");
+        grid.className = "sched-grid";
+        grid.setAttribute("role", "grid");
+        grid.setAttribute("aria-label", title.textContent + " 일정");
+        var first = new Date(y, m, 1);
+        var startPad = first.getDay();
+        var startCell = new Date(y, m, 1 - startPad);
+        for (var i = 0; i < 42; i++) {
+          var d = new Date(startCell.getFullYear(), startCell.getMonth(), startCell.getDate() + i);
+          var cell = document.createElement("div");
+          cell.className = "sched-cell";
+          cell.setAttribute("role", "gridcell");
+          if (d.getMonth() !== m) cell.classList.add("out");
+          if (sameDay(d, today)) cell.classList.add("today");
+          var num = document.createElement("span");
+          num.className = "sched-num";
+          num.textContent = String(d.getDate());
+          cell.appendChild(num);
+          var dayEvents = byDay[iso(d)] || [];
+          if (dayEvents.length && d.getMonth() === m) {
+            cell.classList.add("has-event");
+            if (dayEvents.some(function (ev) { return ev.key; })) cell.classList.add("has-key");
+            if (dayEvents.some(function (ev) { return ev.past; })) cell.classList.add("has-past");
+            var wrap = document.createElement("div");
+            wrap.className = "sched-events";
+            dayEvents.forEach(function (ev) {
+              var chip = document.createElement("span");
+              chip.className = "sched-ev" + (ev.key ? " key" : "") + (ev.past ? " past" : "");
+              chip.textContent = ev.short;
+              chip.title = fmt(ev.date) + " · " + ev.name + (ev.off ? " · " + ev.off : "");
+              wrap.appendChild(chip);
+            });
+            cell.appendChild(wrap);
+          }
+          grid.appendChild(cell);
         }
-        var key = iso(d);
-        if (marks[key]) btn.className += marks[key];
-        if (d < today) btn.disabled = true;
-        btn.addEventListener("click", function (picked) {
-          return function () {
-            $("p-target").value = iso(picked);
-            calView = { y: picked.getFullYear(), m: picked.getMonth() };
-            plan();
-          };
-        }(d));
-        grid.appendChild(btn);
+        card.appendChild(grid);
+        months.appendChild(card);
+        cursor = new Date(y, m + 1, 1);
       }
-      if (selectedEl) {
-        selectedEl.innerHTML = target
-          ? "선택한 심사일 <b>" + fmt(target) + "</b>"
-          : "캘린더에서 목표 심사일을 선택하세요.";
-      }
+      host.appendChild(months);
     }
 
     function plan() {
       var value = $("p-target").value;
       var steps = $("p-steps");
       var verdict = $("p-verdict");
-      steps.textContent = "";
+      var host = $("sched-cal");
+      if (steps) steps.textContent = "";
+      if (host) host.textContent = "";
       var target = parseIso(value);
       if (!value || !target) {
         verdict.className = "p-verdict";
         verdict.textContent = "목표 심사 시작일을 선택하세요.";
         lastPlan = null;
-        renderCalendar(null);
         return;
       }
       var now = new Date();
       var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var events = [];
       PHASES.forEach(function (phase) {
         var date = new Date(target.getTime() + phase.w * 7 * DAY);
-        var li = document.createElement("li");
-        if (date < today && phase.w < 0) li.classList.add("past");
-        if (phase.key) li.classList.add("key");
-        var dateEl = document.createElement("span");
-        dateEl.className = "p-date";
-        dateEl.textContent = fmt(date);
-        var nameEl = document.createElement("span");
-        nameEl.className = "p-name";
-        nameEl.textContent = phase.name;
-        var offEl = document.createElement("span");
-        offEl.className = "p-off";
-        offEl.textContent = (phase.w === 0 ? "심사일" : (phase.w < 0 ? "심사 " + (-phase.w) + "주 전" : "심사 " + phase.w + "주 후")) + (phase.note ? " · " + phase.note : "");
-        li.appendChild(dateEl);
-        li.appendChild(nameEl);
-        li.appendChild(offEl);
-        steps.appendChild(li);
+        var past = date < today && phase.w < 0;
+        var off = (phase.w === 0 ? "심사일" : (phase.w < 0 ? "심사 " + (-phase.w) + "주 전" : "심사 " + phase.w + "주 후")) + (phase.note ? " · " + phase.note : "");
+        var short = phase.name;
+        if (phase.w === 0) short = "인증심사";
+        else if (phase.w === -30) short = "착수";
+        else if (phase.w === -9) short = "인증 신청";
+        else if (phase.w === 10) short = "인증서 발급";
+        else if (phase.name.length > 8) short = phase.name.slice(0, 7) + "…";
+        events.push({ date: date, name: phase.name, short: short, off: off, key: !!phase.key, past: past });
+        if (steps) {
+          var li = document.createElement("li");
+          li.textContent = fmt(date) + " " + phase.name + " (" + off + ")";
+          steps.appendChild(li);
+        }
       });
+      renderScheduleCalendar(events, today);
       var start = new Date(target.getTime() - 30 * 7 * DAY);
       lastPlan = { target: target, start: start, late: start < today };
       var daysLeft = Math.round((start - today) / DAY);
@@ -292,32 +324,12 @@
         verdict.className = "p-verdict late";
         verdict.innerHTML = "권장 일정보다 <b>약 " + shortWeeks + "주</b>가 부족합니다. 신청 전 관리체계 운영 2개월은 줄일 수 없으므로, 범위를 좁히거나 분석·대책 단계를 병행하는 단축 일정이 필요합니다." + (on("h-iso") || on("h-isms") ? " 보유 인증의 증적을 다시 쓰면 앞 단계를 줄일 수 있습니다." : "");
       }
-      if (!calView) calView = { y: target.getFullYear(), m: target.getMonth() };
-      renderCalendar(target);
     }
 
     navi.addEventListener("change", function () { diagnose(); plan(); });
     navi.addEventListener("submit", function (e) { e.preventDefault(); });
     $("p-target").addEventListener("change", plan);
     $("p-target").addEventListener("input", plan);
-    var calPrev = $("cal-prev");
-    var calNext = $("cal-next");
-    if (calPrev) {
-      calPrev.addEventListener("click", function () {
-        if (!calView) return;
-        calView.m -= 1;
-        if (calView.m < 0) { calView.m = 11; calView.y -= 1; }
-        renderCalendar(parseIso($("p-target").value));
-      });
-    }
-    if (calNext) {
-      calNext.addEventListener("click", function () {
-        if (!calView) return;
-        calView.m += 1;
-        if (calView.m > 11) { calView.m = 0; calView.y += 1; }
-        renderCalendar(parseIso($("p-target").value));
-      });
-    }
     diagnose();
     plan();
 
