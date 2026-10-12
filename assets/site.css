@@ -912,11 +912,6 @@ body.theme-inner .hero-actions .btn-ghost {
   border-color: #121212;
   color: #121212;
 }
-body.theme-inner .section .btn-ghost:hover,
-body.theme-inner .band .btn-ghost:hover {
-  border-color: var(--cyan-deep);
-  color: var(--cyan-deep);
-}
 body.theme-inner .navi,
 body.theme-inner .plan,
 body.theme-inner .cert,
